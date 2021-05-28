@@ -1,9 +1,11 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import os
 
-url='https://zona.media/article/2021/05/20/dymovsky'
+url='https://habr.com/ru/post/556036/'
+
 
 def erlog(*args):
 	l = open("erlog.txt", 'a', encoding='windows-1251')
@@ -51,7 +53,7 @@ def find_content(source):
 	# Находим все родительские теги для <p>
 	parents_p = [p.parent for p in p_tags]
 
-	maxi = 0	# тэг с максимальным количеством абзацев текста
+	maxi = 0	# тег с максимальным количеством абзацев текста
 	maxi_index = 0	# индекс тега с максимальным количеством абзацев текста
 
 	# Находим родительский тег с максимальным количеством тегов <p>
@@ -61,14 +63,60 @@ def find_content(source):
 			maxi = str_tag.count('<p')
 			maxi_index = index
 
-	# Полезное содержимое страницы в виде списка вебэлементов по абзацам
+	# Полезное содержимое страницы в виде списка вебэлементов
 	content = parents_p[maxi_index].find_all('p')
 	return content
 
 
-content = find_content(requests_get_source(url))
-print(content)
+def formatter(content, len_line=80):
+	""" Форматирует текст контента по заданным параметрам"""
 
+	clean_content = []
+	# Форматируем ссылки и убираем теги
+	for tag_p in content:
+		str_tag_p = str(tag_p)
+		# Форматируем ссылки в вид [ссылка]
+		while str_tag_p.find('<a href="') >= 0:
+			index_href = str_tag_p.find('<a href="')	# находим индекс начала тега
+			index_end_href = str_tag_p.find('"', index_href+9)	# находим индекс второй кавычки
+			link = str_tag_p[index_href+9:index_end_href]	# вырезаем ссылку
+			formatted_link = '['+link+'] '
+			str_tag_p = str_tag_p.replace('<a href="'+link, formatted_link+'<a "')	# перемещаем [ссылку] за пределы тега
+
+		# убираем все теги, оставляем только текст
+		str_tag_p_clean = re.sub(r'\<[^>]*\>', '', str_tag_p)
+		clean_content.append(str_tag_p_clean)
+
+	# Отбиваем абзацы пустой строкой
+	clean_list_content = []
+	for paragraph in clean_content:
+		clean_list_content.append(paragraph+'\n\n')
+
+	# Создаем список всех слов статьи
+	all_words = []
+	for words in clean_list_content:
+		words_group = words.split(sep=' ')
+		all_words += words_group
+
+	# Регулируем длину строки
+	stroka = ''
+	all_lines = ''
+	for word in all_words:
+		if len(stroka+word) < len_line:
+			stroka += word+' '
+		elif len(word) >= len_line:
+			all_lines += word + '\n'
+		else:
+			all_lines += stroka + '\n'
+			stroka = word+' '
+
+	# Пишем все строки в файл
+	with open('article.txt', 'w', encoding='utf-8') as f:
+		print(all_lines, file=f)
+
+content = find_content(requests_get_source(url))
+# print(content)
+formatter(content)
 	# st_c = re.sub(r'\<[^>]*\>', '', str(st))				# убираем всё, что в теговых скобках, оставляем только текст
 	# st_clean = re.sub('[\r\t\n]', '', st_c)
 	# st_clean = re.sub('Подробнее', '', st_clean)
