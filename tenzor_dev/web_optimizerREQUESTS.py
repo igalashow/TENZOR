@@ -3,6 +3,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from urllib.parse import urlparse
 import os
 
 # url='https://meduza.io/feature/2021/05/23/armiya-mertvetsov-zaka-snaydera-ograblenie-kazino-vo-vremya-apokalipsisa'
@@ -13,6 +14,12 @@ def erlog(*args):
 	print(*args, file=l)
 	l.close()
 
+
+def url_to_path(url):
+	""" Формирует путь сохранения файла из URL """
+	url_parse_result = urlparse(url)
+	file_path = str(url_parse_result.netloc + url_parse_result.path)
+	return file_path
 
 def requests_get_source(url):
 	"""	Получает страницу через Requests """
@@ -145,13 +152,15 @@ while True:
 	try:
 		url = input('Введите URL статьи: ')
 
-		content = find_content(requests_get_source(url))
-		formatted_text = formatter(content)
-
-		# Пишем все строки в файл
-		with open('article.txt', 'w', encoding='utf-8') as f:
-			print(formatted_text, file=f)
-
+		# content = find_content(requests_get_source(url))
+		# formatted_text = formatter(content)
+		#
+		# # Пишем все строки в файл
+		#
+		# with open('article.txt', 'w', encoding='utf-8') as f:
+		# 	print(formatted_text, file=f)
+		#
+		url_to_path(url)
 		print('Файл с текстом статьи создан по адресу:\n')
 
 
