@@ -1,10 +1,11 @@
+import datetime
 import re
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import os
 
-url='https://habr.com/ru/post/556036/'
+url='https://tass.ru/ekonomika/11493549'
 
 
 def erlog(*args):
@@ -101,26 +102,42 @@ def formatter(content, len_line=80):
 	# Регулируем длину строки
 	stroka = ''
 	all_lines = ''
+	end_p = False # флаг конца абзаца
+
 	for word in all_words:
-		if len(stroka+word) < len_line:
-			stroka += word+' '
+		# Если строка не заполнена и не было конца абзаца
+		if len(stroka+word) < len_line and end_p == False:
+			# плюсуем слово
+			stroka += word + ' '
+			# Проверяем на конец абзаца
+			if word.endswith('\n\n'):
+				end_p = True
+				all_lines += stroka
+				stroka = ''
+
+		# Если строка не заполнена и был конец абзаца
+		elif  len(stroka+word) < len_line and end_p == True:
+			stroka = word + ' '
+			end_p = False
+
+		# если длина слова больше длины строки (например ссылка)
 		elif len(word) >= len_line:
 			all_lines += word + '\n'
-		else:
+
+		# Если не было конца абзаца
+		elif end_p == False:
 			all_lines += stroka + '\n'
 			stroka = word+' '
 
 	# Пишем все строки в файл
 	with open('article.txt', 'w', encoding='utf-8') as f:
 		print(all_lines, file=f)
-
-content = find_content(requests_get_source(url))
-# print(content)
-formatter(content)
-	# st_c = re.sub(r'\<[^>]*\>', '', str(st))				# убираем всё, что в теговых скобках, оставляем только текст
-	# st_clean = re.sub('[\r\t\n]', '', st_c)
-	# st_clean = re.sub('Подробнее', '', st_clean)
-	# print(st)
-	
+try:
+	content = find_content(requests_get_source(url))
+	# print(content)
+	formatter(content)
+except Exception as e:
+	erlog(str(e))
+	print('Ошибка, смотри erlog.txt')
 	
 
