@@ -5,17 +5,38 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from urllib.parse import urlparse
 import os
+from config import LEN_LINE, RECOMMEND, WHITE_LIST, BLACK_LIST
 
-# url='https://meduza.io/feature/2021/05/23/armiya-mertvetsov-zaka-snaydera-ograblenie-kazino-vo-vremya-apokalipsisa'
 
 def erlog(*args):
+	""" Логирует ошибки программы в файл erlog.txt"""
 	l = open("erlog.txt", 'a', encoding='windows-1251')
 	print(str(datetime.datetime.today()), file=l)
 	print(*args, file=l)
 	l.close()
 
+
 class WebOptimizer():
 	""" Оптимизатор читаемости текстового контента на сайтах"""
+
+	# def read_config(self):
+	# 	""" Считывает файл настроек config.py"""
+	# 	if os.path.isfile('config.py'):
+	# 		with open('config.py', 'r') as config:
+	#
+	# 	else:
+	# 		pass
+
+
+
+	def recommendation(self, url):
+		""" Вставляет рекомендацию в начало файла """
+		for domen in WHITE_LIST:
+			if domen in url:
+				return '!Это рекомендуемый источник!\n\n'
+		for domen in BLACK_LIST:
+			if domen in url:
+				return '!Это НЕ рекомендуемый источник!\n\n'
 
 	def url_to_path(self, url):
 		""" Формирует путь сохранения файла из URL """
@@ -102,8 +123,8 @@ class WebOptimizer():
 		return content
 
 
-	def formatter(self, content, len_line=80):
-		""" Форматирует текст контента по заданным параметрам"""
+	def formatter(self, content, len_line=80, recommend=False):
+		""" Форматирует текст контента по заданным параметрам """
 
 		clean_content = []
 		# Форматируем ссылки и убираем теги
@@ -121,8 +142,11 @@ class WebOptimizer():
 			str_tag_p_clean = re.sub(r'\<[^>]*\>', '', str_tag_p)
 			clean_content.append(str_tag_p_clean)
 
-		# Отбиваем абзацы и заголовки пустой строкой
 		clean_list_content = []
+		# Если включен режим - добавляем в начало рекомендацию
+		if recommend == True:
+			clean_list_content.append(wo.recommendation(url))
+		# Отбиваем абзацы и заголовки пустой строкой
 		for paragraph in clean_content:
 			clean_list_content.append(paragraph+'\n\n')
 
@@ -165,23 +189,21 @@ class WebOptimizer():
 		return all_lines
 
 while True:
-	# try:
-	wo = WebOptimizer()
+	try:
+		wo = WebOptimizer()
 
-	url = input('Введите URL статьи: ')
+		url = input('Введите URL статьи: ')
 
-	source = wo.requests_get_source(url)
-	content = wo.find_content(source)
-	formatted_text = wo.formatter(content)
+		source = wo.requests_get_source(url)
+		content = wo.find_content(source)
+		formatted_text = wo.formatter(content, LEN_LINE, RECOMMEND)
 
-	# Пишем все строки в файл
-	file_path = wo.url_to_path(url)
+		# Пишем все строки в файл
+		file_path = wo.url_to_path(url)
+		wo.save_file(file_path)
 
-	wo.save_file(file_path)
-
-
-	# except Exception as e:
-	# 	erlog(str(e))
-	# 	print('Ошибка, смотри erlog.txt')
+	except Exception as e:
+		erlog(str(e))
+		print('Ошибка, смотри erlog.txt')
 	
 
