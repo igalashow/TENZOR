@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import os
 
-url='https://tass.ru/ekonomika/11493549'
+url='https://habr.com/ru/post/556036/'
 
 
 def erlog(*args):
@@ -64,8 +64,8 @@ def find_content(source):
 			maxi = str_tag.count('<p')
 			maxi_index = index
 
-	# Полезное содержимое страницы в виде списка вебэлементов
-	content = parents_p[maxi_index].find_all('p')
+	# Полезное содержимое страницы в виде списка вебэлементов, включая заголовки
+	content = parents_p[maxi_index].find_all(['p', 'h1', 'h2', 'h3', 'h4'])
 	return content
 
 
@@ -128,14 +128,17 @@ def formatter(content, len_line=80):
 		elif end_p == False:
 			all_lines += stroka + '\n'
 			stroka = word+' '
+	all_lines += stroka
+	return all_lines
+
+try:
+	content = find_content(requests_get_source(url))
+	formatted_text = formatter(content)
 
 	# Пишем все строки в файл
 	with open('article.txt', 'w', encoding='utf-8') as f:
-		print(all_lines, file=f)
-try:
-	content = find_content(requests_get_source(url))
-	# print(content)
-	formatter(content)
+		print(formatted_text, file=f)
+
 except Exception as e:
 	erlog(str(e))
 	print('Ошибка, смотри erlog.txt')
