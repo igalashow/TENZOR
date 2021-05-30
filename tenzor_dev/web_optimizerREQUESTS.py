@@ -5,12 +5,11 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import os
 
-url='https://habr.com/ru/post/556036/'
-
+# url='https://meduza.io/feature/2021/05/23/armiya-mertvetsov-zaka-snaydera-ograblenie-kazino-vo-vremya-apokalipsisa'
 
 def erlog(*args):
 	l = open("erlog.txt", 'a', encoding='windows-1251')
-	print(str(datetime.today()), file=l)
+	print(str(datetime.datetime.today()), file=l)
 	print(*args, file=l)
 	l.close()
 
@@ -21,6 +20,15 @@ def requests_get_source(url):
 		ua = UserAgent()
 		headers = {'User-Agent': ua.firefox}
 		r = requests.get(url, headers=headers, timeout=15)
+
+	except requests.exceptions.InvalidURL as e:
+		print('Введен некорректный URL!')
+		erlog("Введен некорректный URL!")
+		erlog(str(e))
+	except requests.exceptions.InvalidSchema as e:
+		print('Некорректная схема URL!')
+		erlog("Некорректная схема URL!")
+		erlog(str(e))
 	except requests.ConnectionError as e:
 		erlog(" Упс!! Ошибка соединения. Проверьте подключение к Интернет.")
 		erlog(str(e))
@@ -28,7 +36,7 @@ def requests_get_source(url):
 		erlog(" OOPS!! Timeout Error")
 		erlog(str(e))
 		print('Время загрузки страницы истекло')
-	except requests.RequestException as e:
+	except requests.exceptions.RequestException as e:
 		erlog("OOPS!! General Error")
 		erlog(str(e))
 	except KeyboardInterrupt:
@@ -41,31 +49,33 @@ def requests_get_source(url):
 
 def find_content(source):
 	""" Находит полезный контент на странице """
+	try:
+		soup = BeautifulSoup(source, 'html.parser')
 
-	soup = BeautifulSoup(source, 'html.parser')
+		# удаляем пустые теги
+		empty_tags = soup.findAll(lambda tag: not tag.contents or
+		len(tag.get_text(strip=True)) <= 0)
+		[empty_tag.extract() for empty_tag in empty_tags]
 
-	# удаляем пустые теги
-	empty_tags = soup.findAll(lambda tag: not tag.contents or
-	len(tag.get_text(strip=True)) <= 0)
-	[empty_tag.extract() for empty_tag in empty_tags]
+		# находим все теги абзацев <p>
+		p_tags = soup.find_all('p')
+		# Находим все родительские теги для <p>
+		parents_p = [p.parent for p in p_tags]
 
-	# находим все теги абзацев <p>
-	p_tags = soup.find_all('p')
-	# Находим все родительские теги для <p>
-	parents_p = [p.parent for p in p_tags]
+		maxi = 0	# тег с максимальным количеством абзацев текста
+		maxi_index = 0	# индекс тега с максимальным количеством абзацев текста
 
-	maxi = 0	# тег с максимальным количеством абзацев текста
-	maxi_index = 0	# индекс тега с максимальным количеством абзацев текста
+		# Находим родительский тег с максимальным количеством тегов <p>
+		for index, tag in enumerate(parents_p):
+			str_tag = str(tag)
+			if str_tag.count('<p') > maxi:
+				maxi = str_tag.count('<p')
+				maxi_index = index
 
-	# Находим родительский тег с максимальным количеством тегов <p>
-	for index, tag in enumerate(parents_p):
-		str_tag = str(tag)
-		if str_tag.count('<p') > maxi:
-			maxi = str_tag.count('<p')
-			maxi_index = index
-
-	# Полезное содержимое страницы в виде списка вебэлементов, включая заголовки
-	content = parents_p[maxi_index].find_all(['p', 'h1', 'h2', 'h3', 'h4'])
+		# Полезное содержимое страницы в виде списка вебэлементов, включая заголовки
+		content = parents_p[maxi_index].find_all(['p', 'h1', 'h2', 'h3', 'h4'])
+	except:
+		print('Вероятно, сайт не содержит полезной информации ;)')
 	return content
 
 
@@ -131,16 +141,22 @@ def formatter(content, len_line=80):
 	all_lines += stroka
 	return all_lines
 
-try:
-	content = find_content(requests_get_source(url))
-	formatted_text = formatter(content)
+while True:
+	try:
+		url = input('Введите URL статьи: ')
 
-	# Пишем все строки в файл
-	with open('article.txt', 'w', encoding='utf-8') as f:
-		print(formatted_text, file=f)
+		content = find_content(requests_get_source(url))
+		formatted_text = formatter(content)
 
-except Exception as e:
-	erlog(str(e))
-	print('Ошибка, смотри erlog.txt')
+		# Пишем все строки в файл
+		with open('article.txt', 'w', encoding='utf-8') as f:
+			print(formatted_text, file=f)
+
+		print('Файл с текстом статьи создан по адресу:\n')
+
+
+	except Exception as e:
+		erlog(str(e))
+		print('Ошибка, смотри erlog.txt')
 	
 
