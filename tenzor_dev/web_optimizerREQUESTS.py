@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from urllib.parse import urlparse
 import os
-from config import LEN_LINE, RECOMMEND, WHITE_LIST, BLACK_LIST
+import configparser
 
 
 def erlog(*args):
@@ -18,16 +18,6 @@ def erlog(*args):
 
 class WebOptimizer():
 	""" Оптимизатор читаемости текстового контента на сайтах"""
-
-	# def read_config(self):
-	# 	""" Считывает файл настроек config.py"""
-	# 	if os.path.isfile('config.py'):
-	# 		with open('config.py', 'r') as config:
-	#
-	# 	else:
-	# 		pass
-
-
 
 	def recommendation(self, url):
 		""" Вставляет рекомендацию в начало файла """
@@ -123,7 +113,7 @@ class WebOptimizer():
 		return content
 
 
-	def formatter(self, content, len_line=80, recommend=False):
+	def formatter(self, content, LEN_LINE=80, RECOMMEND=False):
 		""" Форматирует текст контента по заданным параметрам """
 
 		clean_content = []
@@ -144,7 +134,7 @@ class WebOptimizer():
 
 		clean_list_content = []
 		# Если включен режим - добавляем в начало рекомендацию
-		if recommend == True:
+		if RECOMMEND == True:
 			clean_list_content.append(wo.recommendation(url))
 		# Отбиваем абзацы и заголовки пустой строкой
 		for paragraph in clean_content:
@@ -163,7 +153,7 @@ class WebOptimizer():
 
 		for word in all_words:
 			# Если строка не заполнена и не было конца абзаца
-			if len(stroka+word) < len_line and end_p == False:
+			if len(stroka+word) < LEN_LINE and end_p == False:
 				# плюсуем слово
 				stroka += word + ' '
 				# Проверяем на конец абзаца
@@ -173,12 +163,12 @@ class WebOptimizer():
 					stroka = ''
 
 			# Если строка не заполнена и был конец абзаца
-			elif  len(stroka+word) < len_line and end_p == True:
+			elif  len(stroka+word) < LEN_LINE and end_p == True:
 				stroka = word + ' '
 				end_p = False
 
 			# если длина слова больше длины строки (например ссылка)
-			elif len(word) >= len_line:
+			elif len(word) >= LEN_LINE:
 				all_lines += word + '\n'
 
 			# Если не было конца абзаца
@@ -188,10 +178,19 @@ class WebOptimizer():
 		all_lines += stroka
 		return all_lines
 
+
+# Загружаем настройки
+config = configparser.ConfigParser()
+config.read("settings.ini")
+LEN_LINE = int(config.get('Settings', 'len_line'))  # .split(',')
+RECOMMEND = eval(config.get('Settings', 'recommend'))
+WHITE_LIST = config.get('WHITE_LIST', 'wl').split(',')
+BLACK_LIST = config.get('BLACK_LIST', 'bl').split(',')
+
+wo = WebOptimizer()
+
 while True:
 	try:
-		wo = WebOptimizer()
-
 		url = input('Введите URL статьи: ')
 
 		source = wo.requests_get_source(url)

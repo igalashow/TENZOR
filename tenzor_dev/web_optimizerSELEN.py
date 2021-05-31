@@ -5,6 +5,7 @@ import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import os
+import configparser
 
 
 def erlog(*args):
@@ -160,10 +161,18 @@ class WebOptimizer():
 		return all_lines
 
 
+# Загружаем настройки
+config = configparser.ConfigParser()
+config.read("settings.ini")
+LEN_LINE = int(config.get('Settings', 'len_line'))  # .split(',')
+RECOMMEND = eval(config.get('Settings', 'recommend'))
+WHITE_LIST = config.get('WHITE_LIST', 'wl').split(',')
+BLACK_LIST = config.get('BLACK_LIST', 'bl').split(',')
+
+wo = WebOptimizer()
+
 while True:
 	try:
-		wo = WebOptimizer()
-
 		url = input('Введите URL статьи: ')
 
 		source = wo.selenium_get_source(url)
@@ -175,9 +184,9 @@ while True:
 
 		wo.save_file(file_path)
 
-except Exception as e:
-	erlog(str(e))
-	print('Ошибка, смотри erlog.txt')
+	except Exception as e:
+		erlog(str(e))
+		print('Ошибка, смотри erlog.txt')
 
 
 
