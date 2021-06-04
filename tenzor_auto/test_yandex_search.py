@@ -10,12 +10,13 @@ url = 'https://yandex.ru'
 def erlog(*args):
     """ Логирует ошибки программы в файл erlog.txt"""
     l = open("erlog.txt", 'a', encoding='windows-1251')
+    print(*args)
     print(str(datetime.datetime.today()), file=l)
     print(*args, file=l)
     l.close()
 
 
-def ya_search(url):
+def test_ya_search():
     """ Ищет в Яндексе по запросу 'тензор' """
     try:
         op = webdriver.ChromeOptions()
@@ -25,26 +26,27 @@ def ya_search(url):
         # op.add_argument('--headless')
 
         driver = webdriver.Chrome(options=op)
-        driver.get(url)
+        driver.get('https://yandex.ru')
         search_form = driver.find_element_by_xpath("//input[@id='text'][@aria-label='Запрос']")
+        assert search_form
+
+        # ввод в поисковую строку слова 'тензор'
         search_form.send_keys('тензор')
-        # searching_words = driver.find_element_by_xpath("//input[@id='text'][@aria-label='Запрос']").text
-        searching_words = driver.find_element_by_xpath("//span[@class='input__ahead-filler'][contain]")
-        text = searching_words.te
+        # нажимаем Enter
+        search_form.send_keys(Keys.ENTER)
+
         time.sleep(3)
         driver.quit()
     except selenium.common.exceptions.NoSuchElementException as e:
-        print(" Ошибка selenium: элемент не существует")
         erlog(" Ошибка selenium: элемент не существует")
         erlog(str(e))
     except selenium.common.exceptions.InvalidArgumentException as e:
-        print(" Ошибка selenium: инвалидный аргумент")
         erlog(" Ошибка selenium: инвалидный аргумент")
         erlog(str(e))
     finally:
         driver.quit()
 
-    return text
+    return
 
 
-print(ya_search(url=url))
+test_ya_search()
