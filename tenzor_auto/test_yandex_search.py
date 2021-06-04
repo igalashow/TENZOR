@@ -3,6 +3,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions
+from bs4 import BeautifulSoup
 
 
 url = 'https://yandex.ru'
@@ -27,6 +28,7 @@ def test_ya_search():
 
         driver = webdriver.Chrome(options=op)
         driver.get('https://yandex.ru')
+        source = driver.page_source
         search_form = driver.find_element_by_xpath("//input[@id='text'][@aria-label='Запрос']")
         assert search_form
 
@@ -34,9 +36,16 @@ def test_ya_search():
         search_form.send_keys('тензор')
         # нажимаем Enter
         search_form.send_keys(Keys.ENTER)
-
         time.sleep(3)
+
+        # определяем tensor.ru в пятерке поиска
+        # issue = driver.find_elements_by_xpath("//h2[@class]/descendant::a[@href]")#/following-sibling::a[@href]")
         driver.quit()
+        soup = BeautifulSoup(source, 'html.parser')
+        for ahref in issue[:5]:
+            str_ahref = str(ahref.get_attribute('outerHTML'))
+            print(str_ahref)
+
     except selenium.common.exceptions.NoSuchElementException as e:
         erlog(" Ошибка selenium: элемент не существует")
         erlog(str(e))
